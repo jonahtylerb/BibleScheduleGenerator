@@ -1,33 +1,31 @@
-import solidLogo from "./assets/solid.svg";
-
 import "./App.css";
+import * as localforage from "localforage";
+import Picker from "./components/Picker";
+import Schedule from "./components/Schedule";
+import type { ScheduleStore } from "./types";
+
+// localforage.setItem("schedule", {
+//   id: "regular",
+//   completeOn: new Date(2023, 11, 13),
+//   average: 30,
+// });
 
 function App() {
-  const [count, setCount] = createSignal(0);
+  const getSchedule: () => Promise<ScheduleStore | null> = async () => {
+    return await localforage.getItem("schedule");
+  };
+
+  const [schedule] = createResource<ScheduleStore | null>(getSchedule);
 
   return (
-    <section>
-      <div class="icons">
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/vite.svg" class="logo" alt="Vite logo" />
-        </a>
-        <a href="https://solidjs.com" target="_blank">
-          <img src={solidLogo} class="logo solid" alt="Solid logo" />
-        </a>
-      </div>
-      <h1>Vite + Solid</h1>
-      <div class="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count()}
-        </button>
-        <p class="desc">
-          Edit <code>src/App.tsx</code> and save to test HMR <IconTablerCode />
-        </p>
-      </div>
-      <p class="read-the-docs">
-        Click on the Vite and Solid logos to learn more
-      </p>
-    </section>
+    <div>
+      <Show when={!schedule() && !schedule.loading}>
+        <Picker />
+      </Show>
+      <Show when={schedule()}>
+        <Schedule scheduleStore={schedule} />
+      </Show>
+    </div>
   );
 }
 
