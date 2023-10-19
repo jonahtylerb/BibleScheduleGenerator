@@ -1,14 +1,20 @@
-import type { Component, Resource } from "solid-js";
-import type {
-  BibleRange,
-  BibleRef,
-  ScheduleStore,
-  Schedule as ScheduleType,
-} from "../types";
-import schedules from "../assets/schedules";
-import bibleData from "../bible.json";
+import { type Component, type Resource } from "solid-js";
+import type { BibleRange, BibleRef, ScheduleStore } from "../types";
+import bibleData from "../bibleData";
 
-const totalVerses = 31102;
+const totalVerses = bibleData.reduce((sum, book) => {
+  return (
+    sum +
+    book.chapters.reduce((sum, chapter) => {
+      return sum + chapter;
+    }, 0)
+  );
+}, 0);
+
+const getBookName = (book: number) => {
+  return bibleData[book - 1].book;
+};
+
 // TODO: Add completed verses to calculation
 const calculateVersesPerDay = (finishOn: Date) => {
   const diff = finishOn.getTime() - Date.now();
@@ -18,48 +24,99 @@ const calculateVersesPerDay = (finishOn: Date) => {
 };
 
 const getChapterLength = (ref: BibleRef) => {
-  return +bibleData[ref.book - 1].chapters[ref.chapter - 1];
+  return bibleData[ref.book - 1].chapters[ref.chapter - 1];
+};
+
+const createDay = (versesPerDay: number, prevDay: BibleRange) => {
+  let day: BibleRange = {
+    from: structuredClone(prevDay.to),
+    to: structuredClone(prevDay.to),
+  };
+
+  versesPerDay += day.to.verse;
+
+  while (versesPerDay > 0) {
+    if (getChapterLength(day.to)) {
+      if (versesPerDay > getChapterLength(day.to)) {
+        versesPerDay -= getChapterLength(day.to);
+        day.to.chapter++;
+        day.to.verse = 1;
+      } else {
+        day.to.verse = versesPerDay;
+        versesPerDay = 0;
+      }
+    } else {
+      day.to.book++;
+      day.to.chapter = 1;
+      if (day.to.book > 66) {
+        day.to = {
+          book: 66,
+          chapter: 22,
+          verse: 21,
+        };
+        versesPerDay = 0;
+      }
+    }
+  }
+  console.log(day);
+
+  return day;
 };
 
 const Schedule: Component<{ scheduleStore: Resource<ScheduleStore> }> = (
-  props
+  props,
 ) => {
-  const schedule = schedules.find((schedule: ScheduleType) => {
-    return schedule.id === props.scheduleStore()?.name;
-  });
+  const versesPerDay = calculateVersesPerDay(props.scheduleStore()!);
 
-  const versesPerDay = calculateVersesPerDay(props.scheduleStore()!.completeOn);
+  const [allDays, setAllDays] = createSignal<BibleRange[]>([]);
 
-  const [rangesForDays, setRangesForDays] = createSignal<BibleRange[]>([]);
+  let allVerses = totalVerses;
 
-  let verses = totalVerses;
-  let curRange: BibleRange;
-
-  while (verses > 0) {
-    let to: BibleRef = {
+  let days = [];
+  let prevDay = {
+    from: {
       book: 1,
       chapter: 1,
       verse: 1,
-    };
+    },
+    to: {
+      book: 1,
+      chapter: 1,
+      verse: 1,
+    },
+  };
+  while (allVerses > 0) {
+    allVerses -= versesPerDay;
 
-    if (versesPerDay > getChapterLength(to)) {
-      to.chapter++;
-    }
+    let day = createDay(versesPerDay, prevDay);
 
-    curRange = {
-      from: {
-        book: 1,
-        chapter: 1,
-        verse: 1,
-      },
-      to: to,
-    };
+    days.push(day);
+    prevDay = day;
   }
+
+  setAllDays(days);
+  console.log(days);
 
   return (
     <section>
-      <For each={rangesForDays()}>
-        {(bibleRange) => <div>{bibleRange.to.book}</div>}
+      <For each={allDays()}>
+        {(day) => (
+          <section style="display: flex; gap: 1rem; justify-content: center">
+            <div style="gap: 0.25rem; display: flex">
+              <span>{getBookName(day.from.book)}</span>
+              <span>
+                {day.from.chapter}:{day.from.verse}
+              </span>
+            </div>
+            -
+            <div style="gap: 0.25rem; display: flex">
+              <span>{getBookName(day.to.book)}</span>
+              <span>
+                {day.to.chapter}:{day.to.verse}
+              </span>
+            </div>
+          </section>
+        )}
       </For>
     </section>
   );

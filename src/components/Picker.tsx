@@ -5,19 +5,11 @@ import localforage from "localforage";
 const Picker = () => {
   const [schedule, setSchedule] = createSignal({} as ScheduleStore);
 
-  const setScheduleName = (e: Event) => {
-    const input = e.target as HTMLSelectElement;
-    setSchedule((schedule) => {
-      schedule.name = input.value;
-      return schedule;
-    });
-  };
-
   const setScheduleCompletion = (e: Event) => {
     const input = e.target as HTMLInputElement;
     const [year, month, day] = input.value.split("-");
     setSchedule((schedule) => {
-      schedule.completeOn = new Date(+year, +month - 1, +day);
+      schedule = new Date(+year, +month - 1, +day);
       console.log(schedule);
       return schedule;
     });
@@ -56,17 +48,6 @@ const Picker = () => {
   return (
     <form onSubmit={saveSchedule}>
       <h2>Make a Schedule</h2>
-      {/* TODO: Make this get schedules*/}
-      <label for="schedule">Schedule Type</label>
-      <select id="schedule" name="schedule" onChange={setScheduleName}>
-        <option selected disabled>
-          Pick a reading schedule
-        </option>
-        <option value="regular">
-          Sequintal
-          {/* TODO: Learn how to spell*/}
-        </option>
-      </select>
       <label>Complete On</label>
       <input id="date" type="date" required onInput={setScheduleCompletion} />
       <button type="submit">Generate</button>

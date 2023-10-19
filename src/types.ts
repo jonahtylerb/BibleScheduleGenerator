@@ -4,11 +4,7 @@ export type Book = {
   chapters: number[];
 };
 
-export type ScheduleStore = {
-  name: string;
-  completeOn: Date;
-  avrage: number;
-};
+export type ScheduleStore = Date;
 
 export type BibleRef = {
   book: number;
@@ -19,9 +15,4 @@ export type BibleRef = {
 export type BibleRange = {
   from: BibleRef;
   to: BibleRef;
-};
-
-export type Schedule = {
-  id: ScheduleStore["name"];
-  data: BibleRange[];
 };
